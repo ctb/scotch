@@ -1,0 +1,83 @@
+#! /usr/bin/env python
+
+## TODO: multiline; pick form by values, use name; better submit button? ...?
+
+import sys, cgi
+import urlparse
+
+import _path
+import scotch.proxy, scotch.utils
+
+from cPickle import load
+from cStringIO import StringIO
+record_holder = load(open(sys.argv[1], 'rb'))
+
+filters = [scotch.utils.filter_only_primary_pages]
+
+###
+
+def extract_query_terms_from_qs(query_string):
+    for key, value in query_dict.items():
+        print '\t %s: %s' % (key, str(value))
+    
+
+last_was_redirect_after_submit = False
+for n, record in enumerate(record_holder):
+    interesting = True
+    for f in filters:
+        if not f(record):
+            interesting = False
+            break
+
+    if not interesting or last_was_redirect_after_submit:
+        last_was_redirect_after_submit = False
+        continue
+
+    output = [ '# record %d' % (n,)]
+
+    referer_url = record.environ.get("HTTP_REFERER", '')
+    if referer_url:
+        output.append('#   referer = %s' % (referer_url,))
+
+    response = record.response
+
+    query_string = record.environ.get('QUERY_STRING', '')
+    if record.is_post() or record.has_input() or query_string:
+        query_dict = {}
+        if query_string:
+            query_dict.update(cgi.parse_qs(query_string))
+        if record.has_input():
+            fp = StringIO(record.inp)
+            form = cgi.FieldStorage(fp=fp, environ=record.environ)
+
+            for key in form.keys():
+                query_dict[key] = form[key].value
+
+        for k, v in query_dict.items():
+            if type(v) is type([]):
+                assert len(v) == 1, "can't handle multival yet"
+                v = v[0]
+
+            if "\n" in v:
+                v = v.split("\n")[0].strip()
+                
+            cmd = "fv 1 %s '%s'" % (k, v.replace("'", "\\'"))
+            output.append(cmd)
+
+        status = record.response.status
+        status = int(status.split()[0])
+        if status >= 300 and status < 400:
+            last_was_redirect_after_submit = True
+
+        output.append('submit')
+
+    elif response.is_ok():
+        path = record.environ['PATH_INFO']
+        query_string = record.environ.get('QUERY_STRING', '')
+        url = urlparse.urlunparse(('', '', path, '', query_string, ''))
+        cmd = 'go %s' % (url,)
+        output.append(cmd)
+
+    print "\n".join(output)
+    print ''
+    

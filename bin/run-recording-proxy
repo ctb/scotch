@@ -1,0 +1,86 @@
+#! /usr/bin/env python
+import sys
+from optparse import OptionParser
+from cPickle import dump
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+
+# add the lib path (for development purposes)
+import _path
+import scotch.proxy, scotch.recorder
+
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+
+### deal with command line options
+
+option_parser = OptionParser()
+
+option_parser.add_option('--host', action='store', dest='host',
+                   default='127.0.0.1', help='server IP address')
+option_parser.add_option('-p', '--port', action='store', dest='port',
+                         default=8000, help='server port number to bind',
+                         type='int')
+option_parser.add_option('-v', '--verbose', action='store_true',
+                         dest='verbose',
+                     help='display proxy output as well as recorded traffic')
+option_parser.add_option('-q', '--quiet', action='store_true', dest='quiet',
+                         help="don't display recorded traffic")
+
+(options, args) = option_parser.parse_args(sys.argv[1:])
+
+if len(args) > 1:
+    print 'WARNING: ignoring unused arguments %s' % (args,)
+
+filename = 'recording.pickle'
+if len(args):
+    filename = args[0]
+
+###
+
+class MyRequestHandler(WSGIRequestHandler):
+    """
+    Build a request handler that doesn't spit out log messages.
+    """
+    def log_message(self, *args):
+        pass
+
+### run!
+
+httpd = WSGIServer((options.host, options.port), MyRequestHandler)
+
+# create the WSGI apps
+
+proxy_verbosity = 0
+if options.verbose:
+    proxy_verbosity=1
+proxy_app = scotch.proxy.ProxyApp(verbosity=proxy_verbosity)
+
+recorder_verbosity = 1
+if options.quiet:
+    recorder_verbosity = 0
+recorder = scotch.recorder.Recorder(proxy_app, verbosity=recorder_verbosity)
+
+httpd.set_app(recorder)
+
+### open the file we'll save to; don't want to not be able to save!
+
+outfp = open(filename, 'wb')
+
+### run the server.
+
+sa = httpd.socket.getsockname()
+print "\n** scotch proxy server running on", sa[0], "port", sa[1], "..."
+print "** RECORDING to filename '%s'\n" % (filename,)
+
+try:
+    try:
+        while 1:
+            httpd.handle_request()  # serve one request, then exit
+    except KeyboardInterrupt:
+        pass
+finally:
+    ### save the recording
+
+    recorder.save(outfp)
+    outfp.close()
+    
+    print '** Saved %d records' % (len(recorder.record_holder))

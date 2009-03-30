@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.3.7: http://docutils.sourceforge.net/" />
+<title>scotch Recipes</title>
+<link rel="stylesheet" href="default.css" type="text/css" />
+</head>
+<body>
+<div class="document" id="scotch-recipes">
+<h1 class="title">scotch Recipes</h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first"><a name="contents">Contents</a></p>
+<ul class="simple">
+<li><a class="reference" href="#running-a-web-proxy" id="id1" name="id1">Running a Web proxy</a></li>
+<li><a class="reference" href="#recording-wsgi-traffic" id="id2" name="id2">Recording WSGI traffic</a></li>
+<li><a class="reference" href="#displaying-your-recording" id="id3" name="id3">Displaying your recording</a></li>
+<li><a class="reference" href="#wsgi-playback" id="id4" name="id4">WSGI playback</a></li>
+<li><a class="reference" href="#translating-and-viewing-recordings" id="id5" name="id5">Translating and viewing recordings</a></li>
+</ul>
+</div>
+<div class="section" id="running-a-web-proxy">
+<h1><a class="toc-backref" href="#id1" name="running-a-web-proxy">Running a Web proxy</a></h1>
+<p>To set up a Web proxy,</p>
+<pre class="literal-block">
+import scotch.proxy
+app = scotch.proxy.ProxyApp()
+</pre>
+<p>Then run 'app' in any WSGI server, e.g. wsgiref:</p>
+<pre class="literal-block">
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+
+server_address = ('', 8000)
+httpd = WSGIServer(server_address, WSGIRequestHandler)
+
+httpd.set_app(app)
+while 1:
+   httpd.handle_request()
+</pre>
+<p>This is now a fully functional Web proxy running on port 8000.</p>
+</div>
+<div class="section" id="recording-wsgi-traffic">
+<h1><a class="toc-backref" href="#id2" name="recording-wsgi-traffic">Recording WSGI traffic</a></h1>
+<p>To record Web traffic into &amp; out of your WSGI application object,</p>
+<pre class="literal-block">
+import scotch.recorder
+recorder = scotch.recorder.Recorder(app, verbosity=1)
+
+try:
+
+   #
+   # ... serve 'recorder' via a WSGI server, as above ...
+   #
+
+finally:
+   
+   from cPickle import dump
+   outfp = open('recording.pickle', 'w')
+   dump(recorder.record_holder, outfp)
+   outfp.close()
+
+   print 'saved %d records' % (len(recorder.record_holder))
+</pre>
+<p>And yes -- because the ProxyApp (above) is a WSGI application object,
+you can record all of your Web traffic using these two recipes.</p>
+</div>
+<div class="section" id="displaying-your-recording">
+<h1><a class="toc-backref" href="#id3" name="displaying-your-recording">Displaying your recording</a></h1>
+<p>To display the records in your recording,</p>
+<pre class="literal-block">
+from cPickle import load
+record_holder = load(open('recording.pickle'))
+
+import scotch.utils
+for record in record_holder:
+    scotch.utils.display_record(record)
+</pre>
+<p>Note that by default, 'display_record' only displays what it considers
+to be &quot;primary pages&quot; based on a set of filtering rules.  To remove all
+of the filters, do</p>
+<pre class="literal-block">
+for record in record_holder:
+   scotch.utils.display_record(record, filters=[])
+</pre>
+<p>The available filters are:</p>
+<pre class="literal-block">
+filter_not_redirect
+filter_not_redirect_unless_submit
+filter_html_only
+filter_no_images
+filter_no_javascript
+filter_no_css
+filter_no_application
+filter_only_primary_pages
+</pre>
+</div>
+<div class="section" id="wsgi-playback">
+<h1><a class="toc-backref" href="#id4" name="wsgi-playback">WSGI playback</a></h1>
+<p>To play back your recording,</p>
+<pre class="literal-block">
+# ... instantiate your WSGI app object as 'app' ...
+
+# first, load recording from pickled file
+from cPickle import load
+record_holder = load(open('recording.pickle'))
+
+# then, feed each record back into the WSGI app:
+for record in record_holder:
+   new_response = record.refeed(app)
+
+   # here you could compare 'new_response' with 'record.response' if
+   # you wanted.
+</pre>
+<p>Again, because ProxyApp (used in the 1st recipe) is a WSGI app object,
+you can replay the recorded Web traffic from your proxy this way -- in
+essence, &quot;playing back&quot; Web browsing.</p>
+</div>
+<div class="section" id="translating-and-viewing-recordings">
+<h1><a class="toc-backref" href="#id5" name="translating-and-viewing-recordings">Translating and viewing recordings</a></h1>
+<p>Each recorded WSGI transaction is kept in individual records.</p>
+<pre class="literal-block">
+record = Record(...)
+record.environ                   -- the WSGI environment dictonary
+record.inp                       -- any POST data
+
+record.response = Response(...)  -- all response data
+  response.status                -- the status line
+  response.headers               -- response headers
+  response.content_list          -- list of returned blocks of content
+  response.errout                -- error output
+</pre>
+<p>Each record contains an entire request-response pair, so you're completely
+capturing each HTTP transaction in this object.</p>
+</div>
+</div>
+</body>
+</html>

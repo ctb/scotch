@@ -1,0 +1,130 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+scotch -- a collection of somewhat arcane WSGI modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. contents::
+
+The scotch toolkit provides two tools, ``scotch.recorder`` and
+``scotch.proxy``, for Web programmers.  One immediate use of
+scotch is as a **recording HTTP proxy**: you can record, save, and
+play back arbitrary Web traffic.  See the recipes_ for example code,
+and the examples_ for some example output.
+
+The principle innovation in scotch over other recording proxies like
+TCPWatch_ and maxq_ is that recording and playback is decoupled from
+the proxy code using the `Python WSGI standard`_.  Practically
+speaking, this means that recording and playback functionality can be
+added to any Python Web stack, and proxying can be used within any Web
+site.
+
+For example, you can **instrument your own Web site** to record Web traffic: ::
+
+    [ Web server ] <--> [ scotch.recorder ] <--> [ Web app ]
+                                ||
+                                \/
+                               disk
+
+and then play it back: ::
+
+    disk ==> [ scotch.recorder playback ] <--> [ Web app ]
+
+You can also **record from any site**: ::
+
+    [ browser ] <- net -> [ scotch.recorder ] <--> [ scotch.proxy ] <- net -> the WWW
+                                  ||
+                                  \/
+                                 disk
+
+and play *that* back: ::
+
+    disk ==> [ scotch.recorder playback ] <--> [ scotch.proxy ] <- net -> the WWW
+
+In theory, you could wrap the proxy module in a URL rewriter and
+couple it to a WSGI URL dispatcher.  **This would let you mount an
+external Web site "under" your own site**: ::
+
+    your.site.com/        -- main page
+    your.site.com/google/ -- ==> goes to www.google.com/
+
+...but see drawbacks and limitations, below -- the URL rewriter doesn't
+yet exist.
+
+Getting scotch
+~~~~~~~~~~~~~~
+
+You can download scotch from my `darcs projects page`_.
+
+.. _darcs projects page: http://darcs.idyll.org/~t/projects/
+
+How does it work?
+~~~~~~~~~~~~~~~~~
+
+The WSGI standard is really nice, because it specifies *exactly* what
+information is needed to process a request, and it specifies *exactly*
+how that information must be returned.  So, for the recording functionality,
+both input and output are simply saved into a pickle-able Python object.
+Playback is about as simple as you can imagine; see the recipes_ for an
+example.
+
+``scotch.recorder`` is implemented as WSGI middleware, so it can sit
+between any WSGI-compliant server and any WSGI-compliant app object.
+
+The proxy functionality was a bit more technically challenging to
+implement, because outgoing POST data must be joined with outgoing
+headers, and returning data must be split into headers and content.
+
+``scotch.proxy`` is implemented as a WSGI application, so it can sit
+on the app side of any WSGI-compliant server or middleware object.
+
+Drawbacks and Limitations
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The WSGI standard explicitly forbids hop-by-hop headers from HTTP/1.1;
+thus, the proxy code cannot speak HTTP/1.1.  This is not going to
+change.
+
+Both the recording and proxying code are designed for simplicity rather
+than performance!  I doubt this will change.
+
+The ``scotch.proxy`` code doesn't do any sort of reverse proxy
+translation.  This means that it cannot be used to "mount" external
+Web sites under an existing Web site, and it cannot be used as an
+anonymizer, like e.g. CGIProxy_.  This is a medium-term goal.
+
+Other Python Recorders and Proxies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+maxq_ is a recording proxy.  It's actually written in Java, but it
+spits out Jython code.
+
+TCPWatch_ is a full recording proxy server.
+
+pound_ is a full **reverse** proxy setup.  It looks like it is very
+high quality.
+
+http_debugging_proxy_ is a simple Python proxy application that I used
+to help me get scotch working.
+
+webcleaner_ is a filtering proxy.  To quote, "It removes adverts,
+compresses documents, deanimates GIFs, can use SquidGuard filter
+lists, and more."
+
+It'd be neat to see how much of pound_ and webcleaner_ could be broken
+out into WSGI modules & combined with scotch.proxy...
+
+Acknowledgements
+~~~~~~~~~~~~~~~~
+
+Thanks to Ian Bicking and Grig Gheorghiu for intelligent discussion
+about WSGI recording & Web testing in general!
+
+.. _maxq: http://maxq.tigris.org/
+.. _TCPWatch: http://hathawaymix.org/Software/TCPWatch
+.. _Python WSGI standard: http://www.python.org/dev/peps/pep-0333/
+.. _CGIProxy: http://www.jmarshall.com/tools/cgiproxy/
+.. _pound: http://www.apsis.ch/pound
+.. _http_debugging_proxy: http://defrang.com/python
+.. _webcleaner: http://webcleaner.sourceforge.net/
+
+.. _recipes: recipes.html
+.. _examples: examples.html

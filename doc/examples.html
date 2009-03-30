@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.3.7: http://docutils.sourceforge.net/" />
+<title>Examples</title>
+<link rel="stylesheet" href="default.css" type="text/css" />
+</head>
+<body>
+<div class="document" id="examples">
+<h1 class="title">Examples</h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first"><a name="contents">Contents</a></p>
+<ul class="simple">
+<li><a class="reference" href="#a-sample-recording" id="id1" name="id1">A sample recording</a></li>
+<li><a class="reference" href="#sample-playback" id="id2" name="id2">Sample playback</a></li>
+<li><a class="reference" href="#translating-the-recording-to-twill" id="id3" name="id3">Translating the recording to twill</a></li>
+</ul>
+</div>
+<div class="section" id="a-sample-recording">
+<h1><a class="toc-backref" href="#id1" name="a-sample-recording">A sample recording</a></h1>
+<p>Here's sample output from recording a Firefox session in which I
+search for 'python web testing' on Google.  The '#' below each record
+and above each request is the request number; only the filtered
+records (HTML pages, by default) are shown.</p>
+<pre class="literal-block">
+% bin/run-recording-proxy
+
+*** recording to &quot;recording.pickle&quot;
+
+proxy server on 0.0.0.0 port 8000 ...
+REQUEST ==&gt; http://www.google.com/
+
+++ RESPONSE: 200 OK
+++ (1413 bytes of content returned)
+++ (response is text/html)
+(# 1)
+REQUEST ==&gt; http://www.google.com/search
+(query string)
+         q: ['python web testing']
+         btnG: ['Google Search']
+         hl: ['en']
+
+++ RESPONSE: 200 OK
+++ (5363 bytes of content returned)
+++ (response is text/html)
+(# 3)
+REQUEST ==&gt; http://www.groovie.org/articles/2006/02/23/ingredients-to-the-pylons-python-web-framework
+
+++ RESPONSE: 200 OK
+++ (30275 bytes of content returned)
+++ (response is text/html; charset=ISO-8859-1)
+(# 10)
+</pre>
+</div>
+<div class="section" id="sample-playback">
+<h1><a class="toc-backref" href="#id2" name="sample-playback">Sample playback</a></h1>
+<p>Playing back the above recording, you get:</p>
+<pre class="literal-block">
+% bin/play-recorded-proxy recording.pickle
+==&gt; http://www.google.com/ ...
+++ http://www.google.com/
+&gt;&gt; accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+&gt;&gt; accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+&gt;&gt; accept-encoding: gzip,deflate
+&gt;&gt; accept-language: en-us,en;q=0.5
+&gt;&gt; cache-control: max-age=0
+&gt;&gt; cookie: PREF=ID=0f790d8400c12c95:TM=1146725787:LM=1146725787:S=pcRLTNkXlHcA95Nd
+&gt;&gt; host: www.google.com
+&gt;&gt; keep-alive: 300
+&gt;&gt; user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+** 200 OK
+&lt;&lt; cache-control: private
+&lt;&lt; content-encoding: gzip
+&lt;&lt; content-length: 1412
+&lt;&lt; content-type: text/html
+&lt;&lt; date: Fri, 19 May 2006 07:03:02 GMT
+&lt;&lt; server: GWS/2.1
+
+... 200 OK
+==&gt; http://www.google.com/intl/en/images/logo.gif ...
+++ http://www.google.com/intl/en/images/logo.gif
+&gt;&gt; accept: image/png,*/*;q=0.5
+&gt;&gt; accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+&gt;&gt; accept-encoding: gzip,deflate
+&gt;&gt; accept-language: en-us,en;q=0.5
+&gt;&gt; cache-control: max-age=0
+&gt;&gt; cookie: PREF=ID=0f790d8400c12c95:TM=1146725787:LM=1146725787:S=pcRLTNkXlHcA95Nd
+&gt;&gt; host: www.google.com
+&gt;&gt; if-modified-since: Mon, 25 Apr 2005 21:06:18 GMT
+&gt;&gt; keep-alive: 300
+&gt;&gt; referer: http://www.google.com/
+&gt;&gt; user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+** 304 Not Modified
+&lt;&lt; content-length: 0
+&lt;&lt; content-type: text/html
+&lt;&lt; date: Fri, 19 May 2006 07:03:02 GMT
+&lt;&lt; server: GWS/2.1
+
+... 304 Not Modified
+==&gt; http://www.google.com/search ...
+++ http://www.google.com/search
+&gt;&gt; accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+&gt;&gt; accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+&gt;&gt; accept-encoding: gzip,deflate
+&gt;&gt; accept-language: en-us,en;q=0.5
+&gt;&gt; cookie: PREF=ID=0f790d8400c12c95:TM=1146725787:LM=1146725787:S=pcRLTNkXlHcA95Nd
+&gt;&gt; host: www.google.com
+&gt;&gt; keep-alive: 300
+&gt;&gt; referer: http://www.google.com/
+&gt;&gt; user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+** 200 OK
+&lt;&lt; cache-control: private
+&lt;&lt; content-encoding: gzip
+&lt;&lt; content-type: text/html
+&lt;&lt; date: Fri, 19 May 2006 07:03:02 GMT
+&lt;&lt; server: GWS/2.1
+
+... 200 OK
+==&gt; http://www.gravatar.com/avatar.php ...
+++ http://www.gravatar.com/avatar.php
+&gt;&gt; accept: image/png,*/*;q=0.5
+&gt;&gt; accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+&gt;&gt; accept-encoding: gzip,deflate
+&gt;&gt; accept-language: en-us,en;q=0.5
+&gt;&gt; host: www.gravatar.com
+&gt;&gt; keep-alive: 300
+&gt;&gt; referer: http://www.groovie.org/articles/2006/02/23/ingredients-to-the-pylons-python-web-framework
+&gt;&gt; user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+** 200 OK
+&lt;&lt; content-length: 43
+&lt;&lt; content-type: image/gif
+&lt;&lt; date: Fri, 19 May 2006 06:14:34 GMT
+&lt;&lt; server: Apache/2.0.54 (Unix)
+&lt;&lt; x-powered-by: PHP/4.4.0
+
+... 200 OK
+</pre>
+</div>
+<div class="section" id="translating-the-recording-to-twill">
+<h1><a class="toc-backref" href="#id3" name="translating-the-recording-to-twill">Translating the recording to twill</a></h1>
+<p><a class="reference" href="http://www.idyll.org/~t/www-tools/twill/">twill</a> is a simple scripting language for Web browsing; I like to use
+it for testing Web sites.  scotch includes a
+'translate-recording-to-twill' script that outputs twill script.
+Here's some sample output, translated from the recording above.</p>
+<pre class="literal-block">
+# record 0
+go http://www.google.com/
+
+# record 3
+#   referer = http://www.google.com/
+fv 1 q 'python web testing'
+fv 1 btnG 'Google Search'
+fv 1 hl 'en'
+submit
+
+# record 10
+#   referer = http://www.google.com/search?hl=en&amp;q=python+web+testing&amp;btnG=Google+Search
+go http://www.groovie.org/articles/2006/02/23/ingredients-to-the-pylons-python-web-framework
+</pre>
+</div>
+</div>
+</body>
+</html>

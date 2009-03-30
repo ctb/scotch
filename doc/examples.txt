@@ -1,0 +1,149 @@
+~~~~~~~~
+Examples
+~~~~~~~~
+
+.. Contents::
+
+A sample recording
+==================
+
+Here's sample output from recording a Firefox session in which I
+search for 'python web testing' on Google.  The '#' below each record
+and above each request is the request number; only the filtered
+records (HTML pages, by default) are shown. ::
+
+  % bin/run-recording-proxy
+  
+  *** recording to "recording.pickle"
+  
+  proxy server on 0.0.0.0 port 8000 ...
+  REQUEST ==> http://www.google.com/
+  
+  ++ RESPONSE: 200 OK
+  ++ (1413 bytes of content returned)
+  ++ (response is text/html)
+  (# 1)
+  REQUEST ==> http://www.google.com/search
+  (query string)
+           q: ['python web testing']
+           btnG: ['Google Search']
+           hl: ['en']
+  
+  ++ RESPONSE: 200 OK
+  ++ (5363 bytes of content returned)
+  ++ (response is text/html)
+  (# 3)
+  REQUEST ==> http://www.groovie.org/articles/2006/02/23/ingredients-to-the-pylons-python-web-framework
+  
+  ++ RESPONSE: 200 OK
+  ++ (30275 bytes of content returned)
+  ++ (response is text/html; charset=ISO-8859-1)
+  (# 10)
+
+Sample playback
+===============
+
+Playing back the above recording, you get: ::
+
+  % bin/play-recorded-proxy recording.pickle
+  ==> http://www.google.com/ ...
+  ++ http://www.google.com/
+  >> accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+  >> accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+  >> accept-encoding: gzip,deflate
+  >> accept-language: en-us,en;q=0.5
+  >> cache-control: max-age=0
+  >> cookie: PREF=ID=0f790d8400c12c95:TM=1146725787:LM=1146725787:S=pcRLTNkXlHcA95Nd
+  >> host: www.google.com
+  >> keep-alive: 300
+  >> user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+  ** 200 OK
+  << cache-control: private
+  << content-encoding: gzip
+  << content-length: 1412
+  << content-type: text/html
+  << date: Fri, 19 May 2006 07:03:02 GMT
+  << server: GWS/2.1
+  
+  ... 200 OK
+  ==> http://www.google.com/intl/en/images/logo.gif ...
+  ++ http://www.google.com/intl/en/images/logo.gif
+  >> accept: image/png,*/*;q=0.5
+  >> accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+  >> accept-encoding: gzip,deflate
+  >> accept-language: en-us,en;q=0.5
+  >> cache-control: max-age=0
+  >> cookie: PREF=ID=0f790d8400c12c95:TM=1146725787:LM=1146725787:S=pcRLTNkXlHcA95Nd
+  >> host: www.google.com
+  >> if-modified-since: Mon, 25 Apr 2005 21:06:18 GMT
+  >> keep-alive: 300
+  >> referer: http://www.google.com/
+  >> user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+  ** 304 Not Modified
+  << content-length: 0
+  << content-type: text/html
+  << date: Fri, 19 May 2006 07:03:02 GMT
+  << server: GWS/2.1
+  
+  ... 304 Not Modified
+  ==> http://www.google.com/search ...
+  ++ http://www.google.com/search
+  >> accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+  >> accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+  >> accept-encoding: gzip,deflate
+  >> accept-language: en-us,en;q=0.5
+  >> cookie: PREF=ID=0f790d8400c12c95:TM=1146725787:LM=1146725787:S=pcRLTNkXlHcA95Nd
+  >> host: www.google.com
+  >> keep-alive: 300
+  >> referer: http://www.google.com/
+  >> user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+  ** 200 OK
+  << cache-control: private
+  << content-encoding: gzip
+  << content-type: text/html
+  << date: Fri, 19 May 2006 07:03:02 GMT
+  << server: GWS/2.1
+  
+  ... 200 OK
+  ==> http://www.gravatar.com/avatar.php ...
+  ++ http://www.gravatar.com/avatar.php
+  >> accept: image/png,*/*;q=0.5
+  >> accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+  >> accept-encoding: gzip,deflate
+  >> accept-language: en-us,en;q=0.5
+  >> host: www.gravatar.com
+  >> keep-alive: 300
+  >> referer: http://www.groovie.org/articles/2006/02/23/ingredients-to-the-pylons-python-web-framework
+  >> user-agent: Mozilla/5.0 (Macintosh; U; PPC Mac OS X Mach-O; en-US; rv:1.8.0.3) Gecko/20060426 Firefox/1.5.0.3
+  ** 200 OK
+  << content-length: 43
+  << content-type: image/gif
+  << date: Fri, 19 May 2006 06:14:34 GMT
+  << server: Apache/2.0.54 (Unix)
+  << x-powered-by: PHP/4.4.0
+  
+  ... 200 OK
+
+Translating the recording to twill
+==================================
+
+twill_ is a simple scripting language for Web browsing; I like to use
+it for testing Web sites.  scotch includes a
+'translate-recording-to-twill' script that outputs twill script.
+Here's some sample output, translated from the recording above. ::
+
+  # record 0
+  go http://www.google.com/
+  
+  # record 3
+  #   referer = http://www.google.com/
+  fv 1 q 'python web testing'
+  fv 1 btnG 'Google Search'
+  fv 1 hl 'en'
+  submit
+  
+  # record 10
+  #   referer = http://www.google.com/search?hl=en&q=python+web+testing&btnG=Google+Search
+  go http://www.groovie.org/articles/2006/02/23/ingredients-to-the-pylons-python-web-framework
+
+.. _twill: http://www.idyll.org/~t/www-tools/twill/

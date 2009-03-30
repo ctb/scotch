@@ -1,0 +1,122 @@
+~~~~~~~~~~~~~~
+scotch Recipes
+~~~~~~~~~~~~~~
+
+.. contents::
+
+Running a Web proxy
+===================
+
+To set up a Web proxy, ::
+
+    import scotch.proxy
+    app = scotch.proxy.ProxyApp()
+
+Then run 'app' in any WSGI server, e.g. wsgiref: ::
+
+    from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+
+    server_address = ('', 8000)
+    httpd = WSGIServer(server_address, WSGIRequestHandler)
+
+    httpd.set_app(app)
+    while 1:
+       httpd.handle_request()
+
+This is now a fully functional Web proxy running on port 8000.
+
+Recording WSGI traffic
+======================
+
+To record Web traffic into & out of your WSGI application object, ::
+
+   import scotch.recorder
+   recorder = scotch.recorder.Recorder(app, verbosity=1)
+
+   try:
+
+      #
+      # ... serve 'recorder' via a WSGI server, as above ...
+      #
+
+   finally:
+      
+      from cPickle import dump
+      outfp = open('recording.pickle', 'w')
+      dump(recorder.record_holder, outfp)
+      outfp.close()
+
+      print 'saved %d records' % (len(recorder.record_holder))
+
+And yes -- because the ProxyApp (above) is a WSGI application object,
+you can record all of your Web traffic using these two recipes.
+
+Displaying your recording
+=========================
+
+To display the records in your recording, ::
+
+   from cPickle import load
+   record_holder = load(open('recording.pickle'))
+
+   import scotch.utils
+   for record in record_holder:
+       scotch.utils.display_record(record)
+
+Note that by default, 'display_record' only displays what it considers
+to be "primary pages" based on a set of filtering rules.  To remove all
+of the filters, do ::
+
+   for record in record_holder:
+      scotch.utils.display_record(record, filters=[])
+
+The available filters are: ::
+
+   filter_not_redirect
+   filter_not_redirect_unless_submit
+   filter_html_only
+   filter_no_images
+   filter_no_javascript
+   filter_no_css
+   filter_no_application
+   filter_only_primary_pages
+
+WSGI playback
+=============
+
+To play back your recording, ::
+
+   # ... instantiate your WSGI app object as 'app' ...
+
+   # first, load recording from pickled file
+   from cPickle import load
+   record_holder = load(open('recording.pickle'))
+
+   # then, feed each record back into the WSGI app:
+   for record in record_holder:
+      new_response = record.refeed(app)
+
+      # here you could compare 'new_response' with 'record.response' if
+      # you wanted.
+
+Again, because ProxyApp (used in the 1st recipe) is a WSGI app object,
+you can replay the recorded Web traffic from your proxy this way -- in
+essence, "playing back" Web browsing.
+
+Translating and viewing recordings
+==================================
+
+Each recorded WSGI transaction is kept in individual records. ::
+
+   record = Record(...)
+   record.environ                   -- the WSGI environment dictonary
+   record.inp                       -- any POST data
+
+   record.response = Response(...)  -- all response data
+     response.status                -- the status line
+     response.headers               -- response headers
+     response.content_list          -- list of returned blocks of content
+     response.errout                -- error output
+
+Each record contains an entire request-response pair, so you're completely
+capturing each HTTP transaction in this object.

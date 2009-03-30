@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.3.7: http://docutils.sourceforge.net/" />
+<title>scotch -- a collection of somewhat arcane WSGI modules</title>
+<link rel="stylesheet" href="default.css" type="text/css" />
+</head>
+<body>
+<div class="document" id="scotch-a-collection-of-somewhat-arcane-wsgi-modules">
+<h1 class="title">scotch -- a collection of somewhat arcane WSGI modules</h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first"><a name="contents">Contents</a></p>
+<ul class="simple">
+<li><a class="reference" href="#getting-scotch" id="id1" name="id1">Getting scotch</a></li>
+<li><a class="reference" href="#how-does-it-work" id="id2" name="id2">How does it work?</a></li>
+<li><a class="reference" href="#drawbacks-and-limitations" id="id3" name="id3">Drawbacks and Limitations</a></li>
+<li><a class="reference" href="#other-python-recorders-and-proxies" id="id4" name="id4">Other Python Recorders and Proxies</a></li>
+<li><a class="reference" href="#acknowledgements" id="id5" name="id5">Acknowledgements</a></li>
+</ul>
+</div>
+<p>The scotch toolkit provides two tools, <tt class="docutils literal"><span class="pre">scotch.recorder</span></tt> and
+<tt class="docutils literal"><span class="pre">scotch.proxy</span></tt>, for Web programmers.  One immediate use of
+scotch is as a <strong>recording HTTP proxy</strong>: you can record, save, and
+play back arbitrary Web traffic.  See the <a class="reference" href="recipes.html">recipes</a> for example code,
+and the <a class="reference" href="examples.html">examples</a> for some example output.</p>
+<p>The principle innovation in scotch over other recording proxies like
+<a class="reference" href="http://hathawaymix.org/Software/TCPWatch">TCPWatch</a> and <a class="reference" href="http://maxq.tigris.org/">maxq</a> is that recording and playback is decoupled from
+the proxy code using the <a class="reference" href="http://www.python.org/dev/peps/pep-0333/">Python WSGI standard</a>.  Practically
+speaking, this means that recording and playback functionality can be
+added to any Python Web stack, and proxying can be used within any Web
+site.</p>
+<p>For example, you can <strong>instrument your own Web site</strong> to record Web traffic:</p>
+<pre class="literal-block">
+[ Web server ] &lt;--&gt; [ scotch.recorder ] &lt;--&gt; [ Web app ]
+                            ||
+                            \/
+                           disk
+</pre>
+<p>and then play it back:</p>
+<pre class="literal-block">
+disk ==&gt; [ scotch.recorder playback ] &lt;--&gt; [ Web app ]
+</pre>
+<p>You can also <strong>record from any site</strong>:</p>
+<pre class="literal-block">
+[ browser ] &lt;- net -&gt; [ scotch.recorder ] &lt;--&gt; [ scotch.proxy ] &lt;- net -&gt; the WWW
+                              ||
+                              \/
+                             disk
+</pre>
+<p>and play <em>that</em> back:</p>
+<pre class="literal-block">
+disk ==&gt; [ scotch.recorder playback ] &lt;--&gt; [ scotch.proxy ] &lt;- net -&gt; the WWW
+</pre>
+<p>In theory, you could wrap the proxy module in a URL rewriter and
+couple it to a WSGI URL dispatcher.  <strong>This would let you mount an
+external Web site &quot;under&quot; your own site</strong>:</p>
+<pre class="literal-block">
+your.site.com/        -- main page
+your.site.com/google/ -- ==&gt; goes to www.google.com/
+</pre>
+<p>...but see drawbacks and limitations, below -- the URL rewriter doesn't
+yet exist.</p>
+<div class="section" id="getting-scotch">
+<h1><a class="toc-backref" href="#id1" name="getting-scotch">Getting scotch</a></h1>
+<p>You can download scotch from my <a class="reference" href="http://darcs.idyll.org/~t/projects/">darcs projects page</a>.</p>
+</div>
+<div class="section" id="how-does-it-work">
+<h1><a class="toc-backref" href="#id2" name="how-does-it-work">How does it work?</a></h1>
+<p>The WSGI standard is really nice, because it specifies <em>exactly</em> what
+information is needed to process a request, and it specifies <em>exactly</em>
+how that information must be returned.  So, for the recording functionality,
+both input and output are simply saved into a pickle-able Python object.
+Playback is about as simple as you can imagine; see the <a class="reference" href="recipes.html">recipes</a> for an
+example.</p>
+<p><tt class="docutils literal"><span class="pre">scotch.recorder</span></tt> is implemented as WSGI middleware, so it can sit
+between any WSGI-compliant server and any WSGI-compliant app object.</p>
+<p>The proxy functionality was a bit more technically challenging to
+implement, because outgoing POST data must be joined with outgoing
+headers, and returning data must be split into headers and content.</p>
+<p><tt class="docutils literal"><span class="pre">scotch.proxy</span></tt> is implemented as a WSGI application, so it can sit
+on the app side of any WSGI-compliant server or middleware object.</p>
+</div>
+<div class="section" id="drawbacks-and-limitations">
+<h1><a class="toc-backref" href="#id3" name="drawbacks-and-limitations">Drawbacks and Limitations</a></h1>
+<p>The WSGI standard explicitly forbids hop-by-hop headers from HTTP/1.1;
+thus, the proxy code cannot speak HTTP/1.1.  This is not going to
+change.</p>
+<p>Both the recording and proxying code are designed for simplicity rather
+than performance!  I doubt this will change.</p>
+<p>The <tt class="docutils literal"><span class="pre">scotch.proxy</span></tt> code doesn't do any sort of reverse proxy
+translation.  This means that it cannot be used to &quot;mount&quot; external
+Web sites under an existing Web site, and it cannot be used as an
+anonymizer, like e.g. <a class="reference" href="http://www.jmarshall.com/tools/cgiproxy/">CGIProxy</a>.  This is a medium-term goal.</p>
+</div>
+<div class="section" id="other-python-recorders-and-proxies">
+<h1><a class="toc-backref" href="#id4" name="other-python-recorders-and-proxies">Other Python Recorders and Proxies</a></h1>
+<p><a class="reference" href="http://maxq.tigris.org/">maxq</a> is a recording proxy.  It's actually written in Java, but it
+spits out Jython code.</p>
+<p><a class="reference" href="http://hathawaymix.org/Software/TCPWatch">TCPWatch</a> is a full recording proxy server.</p>
+<p><a class="reference" href="http://www.apsis.ch/pound">pound</a> is a full <strong>reverse</strong> proxy setup.  It looks like it is very
+high quality.</p>
+<p><a class="reference" href="http://defrang.com/python">http_debugging_proxy</a> is a simple Python proxy application that I used
+to help me get scotch working.</p>
+<p><a class="reference" href="http://webcleaner.sourceforge.net/">webcleaner</a> is a filtering proxy.  To quote, &quot;It removes adverts,
+compresses documents, deanimates GIFs, can use SquidGuard filter
+lists, and more.&quot;</p>
+<p>It'd be neat to see how much of <a class="reference" href="http://www.apsis.ch/pound">pound</a> and <a class="reference" href="http://webcleaner.sourceforge.net/">webcleaner</a> could be broken
+out into WSGI modules &amp; combined with scotch.proxy...</p>
+</div>
+<div class="section" id="acknowledgements">
+<h1><a class="toc-backref" href="#id5" name="acknowledgements">Acknowledgements</a></h1>
+<p>Thanks to Ian Bicking and Grig Gheorghiu for intelligent discussion
+about WSGI recording &amp; Web testing in general!</p>
+</div>
+</div>
+</body>
+</html>

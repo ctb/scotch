@@ -1,0 +1,47 @@
+#! /usr/bin/env python
+import sys
+from optparse import OptionParser
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+
+# add the lib path (for development purposes)
+import _path
+import scotch.proxy, scotch.recorder
+
+### deal with command line options
+
+option_parser = OptionParser()
+
+option_parser.add_option('--host', action='store', dest='host',
+                   default='127.0.0.1', help='server IP address')
+option_parser.add_option('-p', '--port', action='store', dest='port',
+                         default=8000, help='server port number to bind',
+                         type='int')
+
+(options, args) = option_parser.parse_args(sys.argv[1:])
+
+if args:
+    print 'WARNING: ignoring unused arguments %s' % (args,)
+
+### replace the default request handler logging with silence...
+
+class MyRequestHandler(WSGIRequestHandler):
+    def log_message(self, *args):
+        pass
+    
+### run!
+    
+httpd = WSGIServer((options.host, options.port), MyRequestHandler)
+
+app = scotch.proxy.ProxyApp(verbosity=1)
+httpd.set_app(app)
+
+sa = httpd.socket.getsockname()
+print "\n** scotch proxy server running on", sa[0], "port", sa[1], "...\n"
+
+### serve forever
+
+try:
+    while 1:
+        httpd.handle_request()
+except KeyboardInterrupt:
+    pass
